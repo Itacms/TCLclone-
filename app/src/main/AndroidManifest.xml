@@ -9,6 +9,8 @@
 
     <application
         android:label="IPTV Clone"
+        android:icon="@drawable/ic_launcher"
+        android:roundIcon="@drawable/ic_launcher"
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.App">
 
@@ -20,7 +22,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
-            </intent-filter>
+        </intent-filter>
         </activity>
     </application>
 </manifest>
