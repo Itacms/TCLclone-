@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -37,24 +39,31 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import coil.compose.AsyncImage
 import com.iptvclone.player.AppViewModel
 import com.iptvclone.player.data.Channel
 
 enum class Tab(val label: String, val icon: ImageVector) {
     HOME("Início", Icons.Filled.Home),
-    CHANNELS("Canais", Icons.Filled.PlayArrow),
-    MOVIES("Filmes", Icons.Filled.Star),
+    CHANNELS("TV ao vivo", Icons.Filled.PlayArrow),
+    MOVIES("Filmes e séries", Icons.Filled.Star),
     FAVORITES("Favoritos", Icons.Filled.Favorite),
-    PLAYLISTS("Listas IPTV", Icons.Filled.List), // aba nova
-    SETTINGS("Config.", Icons.Filled.Settings),
+    PLAYLISTS("Listas IPTV", Icons.Filled.List),
+    SETTINGS("Configurações", Icons.Filled.Settings),
 }
 
 private val movieRegex = Regex("film|movie|vod|cine|s[ée]rie|series", RegexOption.IGNORE_CASE)
+private const val heroImage = "https://aws-obg-image-lb-5.tcl.com/content/dam/brandsite/region/brazil/blog/naruto.jpg?t=1758250221939&w=1200"
 
 @Composable
 fun App(vm: AppViewModel) {
@@ -69,10 +78,10 @@ fun App(vm: AppViewModel) {
 
     val content: @Composable () -> Unit = {
         when (tab) {
-            Tab.HOME -> HomeScreen(vm, onGoPlaylists = { tab = Tab.PLAYLISTS }, onPlay = { playing = it })
+            Tab.HOME -> HomeScreen(vm, onGoChannels = { tab = Tab.CHANNELS }, onGoPlaylists = { tab = Tab.PLAYLISTS }, onPlay = { playing = it })
             Tab.CHANNELS -> ChannelsScreen(
-                "Canais", vm.channels.filterNot { movieRegex.containsMatchIn(it.group) }, vm.favorites,
-                "Nenhum canal. Adicione uma lista na aba \"Listas IPTV\".",
+                "TV ao vivo", vm.channels.filterNot { movieRegex.containsMatchIn(it.group) }, vm.favorites,
+                "Nenhum canal encontrado. Adicione sua lista na aba Listas IPTV.",
                 { playing = it }, vm::toggleFavorite,
             )
             Tab.MOVIES -> ChannelsScreen(
@@ -82,7 +91,7 @@ fun App(vm: AppViewModel) {
             )
             Tab.FAVORITES -> ChannelsScreen(
                 "Favoritos", vm.channels.filter { it.url in vm.favorites }, vm.favorites,
-                "Toque no coração de um canal para favoritá-lo.",
+                "Use o coração de um canal para adicioná-lo aos favoritos.",
                 { playing = it }, vm::toggleFavorite,
             )
             Tab.PLAYLISTS -> PlaylistsScreen(vm)
@@ -90,33 +99,33 @@ fun App(vm: AppViewModel) {
         }
     }
 
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize().background(Color(0xFF080B12))) {
         if (maxWidth >= 720.dp) {
-            // TV / tablet: sidebar à esquerda (como o drawer do app original)
             Row(Modifier.fillMaxSize()) {
                 Column(
-                    Modifier.width(220.dp).fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    Modifier.width(184.dp).fillMaxHeight()
+                        .background(Color(0xFF0B101A))
+                        .padding(horizontal = 12.dp, vertical = 22.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    Text("TCL  •  PLAY", color = Color(0xFF53D8D1), fontWeight = FontWeight.Bold, fontSize = 17.sp, modifier = Modifier.padding(start = 12.dp, bottom = 22.dp))
                     Tab.values().forEach { t ->
-                        val bg = if (t == tab) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.surfaceVariant
+                        val selected = t == tab
+                        val bg = if (selected) Color(0xFF203A49) else Color.Transparent
                         Row(
-                            Modifier.fillMaxWidth().tvClickable { tab = t }.background(bg).padding(12.dp),
+                            Modifier.fillMaxWidth().tvClickable(RoundedCornerShape(14.dp)) { tab = t }
+                                .background(bg, RoundedCornerShape(14.dp)).padding(horizontal = 12.dp, vertical = 13.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(t.icon, contentDescription = null, modifier = Modifier.size(22.dp))
+                            Icon(t.icon, contentDescription = null, tint = if (selected) Color(0xFF67E4DB) else Color(0xFFB7C0CE), modifier = Modifier.size(21.dp))
                             Spacer(Modifier.width(12.dp))
-                            Text(t.label)
+                            Text(t.label, color = if (selected) Color.White else Color(0xFFB7C0CE), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }
                 Box(Modifier.weight(1f).fillMaxHeight()) { content() }
             }
         } else {
-            // Celular: barra inferior
             Column(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(1f).fillMaxWidth()) { content() }
                 NavigationBar {
@@ -125,7 +134,7 @@ fun App(vm: AppViewModel) {
                             selected = t == tab,
                             onClick = { tab = t },
                             icon = { Icon(t.icon, contentDescription = t.label) },
-                            label = { Text(t.label, maxLines = 1, fontSize = 10.sp) },
+                            label = { Text(t.label, maxLines = 1, fontSize = 9.sp) },
                         )
                     }
                 }
@@ -135,43 +144,153 @@ fun App(vm: AppViewModel) {
 }
 
 @Composable
-private fun HomeScreen(vm: AppViewModel, onGoPlaylists: () -> Unit, onPlay: (Channel) -> Unit) {
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Início", style = MaterialTheme.typography.headlineSmall)
-        if (vm.playlists.isEmpty()) {
-            Text("Você ainda não tem listas. Adicione uma lista IPTV por URL ou arquivo local.")
-            Button(onClick = onGoPlaylists) { Text("Adicionar lista IPTV") }
-        } else {
-            Text("${vm.playlists.size} listas • ${vm.channels.size} canais • ${vm.favorites.size} favoritos")
-            val favs = vm.channels.filter { it.url in vm.favorites }
-            if (favs.isNotEmpty()) {
-                Text("Favoritos", style = MaterialTheme.typography.titleMedium)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(favs) { ch ->
-                        Column(
-                            Modifier.width(110.dp).tvClickable { onPlay(ch) }.padding(8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            AsyncImage(model = ch.logo, contentDescription = null, modifier = Modifier.size(64.dp))
-                            Text(ch.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp)
+private fun HomeScreen(
+    vm: AppViewModel,
+    onGoChannels: () -> Unit,
+    onGoPlaylists: () -> Unit,
+    onPlay: (Channel) -> Unit,
+) {
+    val channels = vm.channels
+    val favorites = channels.filter { it.url in vm.favorites }
+    val live = channels.filterNot { movieRegex.containsMatchIn(it.group) }
+    val films = channels.filter { movieRegex.containsMatchIn(it.group) }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().background(Color(0xFF080B12)),
+        verticalArrangement = Arrangement.spacedBy(22.dp),
+    ) {
+        item {
+            Box(Modifier.fillMaxWidth().height(310.dp).background(Color(0xFF121A29))) {
+                AsyncImage(
+                    model = heroImage,
+                    contentDescription = "Destaque visual",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+                Box(
+                    Modifier.fillMaxSize().background(
+                        Brush.horizontalGradient(
+                            listOf(Color(0xFF080B12), Color(0xE6080B12), Color(0x99080B12), Color.Transparent)
+                        )
+                    )
+                )
+                Box(
+                    Modifier.fillMaxSize().background(
+                        Brush.verticalGradient(listOf(Color.Transparent, Color(0xAA080B12)))
+                    )
+                )
+                Column(
+                    Modifier.align(Alignment.CenterStart).fillMaxWidth(0.72f).padding(start = 28.dp, end = 12.dp, top = 14.dp, bottom = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text("DESTAQUE", color = Color(0xFF63DED5), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text("Entre no seu mundo", color = Color.White, fontSize = 29.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 33.sp)
+                    Text(
+                        if (channels.isEmpty()) "Adicione uma lista IPTV para preencher sua tela com seus canais."
+                        else "Seus canais, favoritos e conteúdos em uma experiência feita para a TV.",
+                        color = Color(0xFFE1E6EE), fontSize = 13.sp, maxLines = 3, overflow = TextOverflow.Ellipsis,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button(onClick = { if (live.isNotEmpty()) onPlay(live.first()) else onGoChannels() }) {
+                            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(5.dp))
+                            Text("Assistir")
+                        }
+                        OutlinedButton(onClick = if (channels.isEmpty()) onGoPlaylists else onGoChannels) {
+                            Text(if (channels.isEmpty()) "Adicionar lista" else "Ver canais")
                         }
                     }
                 }
+                Text(
+                    "IPTV  •  SUA PROGRAMAÇÃO",
+                    color = Color(0xFFD6DCE7),
+                    fontSize = 10.sp,
+                    letterSpacing = 1.4.sp,
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(18.dp),
+                )
             }
-            OutlinedButton(onClick = onGoPlaylists) { Text("Gerenciar listas") }
+        }
+
+        item {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Sua programação", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                    Text("${vm.playlists.size} listas  •  ${channels.size} canais  •  ${vm.favorites.size} favoritos", color = Color(0xFF9AA6B8), fontSize = 12.sp)
+                }
+                Text("GERENCIAR LISTAS  ›", color = Color(0xFF65DCD4), fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.tvClickable { onGoPlaylists() }.padding(8.dp))
+            }
+        }
+
+        if (favorites.isNotEmpty()) {
+            item { ChannelShelf("Continue com seus favoritos", favorites, onPlay) }
+        }
+        if (live.isNotEmpty()) {
+            item { ChannelShelf("TV ao vivo", live, onPlay) }
+        }
+        if (films.isNotEmpty()) {
+            item { ChannelShelf("Filmes e séries", films, onPlay) }
+        }
+        if (channels.isEmpty()) {
+            item {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Sua tela está esperando suas listas", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Importe um arquivo M3U/M3U8 ou cole o endereço da sua lista para começar.", color = Color(0xFF9AA6B8), fontSize = 13.sp)
+                    OutlinedButton(onClick = onGoPlaylists) { Text("Abrir Listas IPTV") }
+                }
+            }
+        }
+        item { Spacer(Modifier.height(8.dp)) }
+    }
+}
+
+@Composable
+private fun ChannelShelf(title: String, channels: List<Channel>, onPlay: (Channel) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 24.dp))
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 24.dp),
+        ) {
+            items(channels.take(30)) { ch ->
+                Column(
+                    Modifier.width(156.dp).tvClickable(RoundedCornerShape(12.dp)) { onPlay(ch) }
+                        .background(Color(0xFF151D2A), RoundedCornerShape(12.dp)).padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Box(Modifier.fillMaxWidth().height(82.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF202B3B)), contentAlignment = Alignment.Center) {
+                        AsyncImage(
+                            model = ch.logo,
+                            contentDescription = ch.name,
+                            modifier = Modifier.fillMaxSize().padding(8.dp),
+                            contentScale = ContentScale.Fit,
+                        )
+                        if (ch.logo.isNullOrBlank()) {
+                            Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = Color(0xFF63DED5), modifier = Modifier.size(32.dp))
+                        }
+                    }
+                    Text(ch.name, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, minLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(ch.group.ifBlank { "TV" }, color = Color(0xFF9AA6B8), fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
         }
     }
 }
 
 @Composable
 private fun SettingsScreen(vm: AppViewModel) {
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Configurações", style = MaterialTheme.typography.headlineSmall)
+    Column(Modifier.fillMaxSize().background(Color(0xFF080B12)).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Configurações", style = MaterialTheme.typography.headlineSmall, color = Color.White)
         OutlinedButton(onClick = { vm.clearFavorites() }) { Text("Limpar favoritos") }
         Text(
             "Este app é apenas um player. Use somente listas e conteúdos que você tem direito de acessar.",
             style = MaterialTheme.typography.bodySmall,
+            color = Color(0xFF9AA6B8),
         )
-        Text("Versão 1.0", style = MaterialTheme.typography.bodySmall)
+        Text("Versão 1.1", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9AA6B8))
     }
 }
