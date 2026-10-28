@@ -25,10 +25,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var backgroundOpacity by mutableStateOf(prefs.getInt("backgroundOpacity", 100)); private set
     var logoOpacity by mutableStateOf(prefs.getInt("logoOpacity", 100)); private set
     var cardOpacity by mutableStateOf(prefs.getInt("cardOpacity", 100)); private set
+    var bannerOpacity by mutableStateOf(prefs.getInt("bannerOpacity", 100)); private set
+    var slideIntervalSeconds by mutableStateOf(prefs.getInt("slideIntervalSeconds", 8)); private set
+    var autoPlayStreams by mutableStateOf(prefs.getBoolean("autoPlayStreams", true)); private set
 
     fun setOpacity(key: String, value: Int) {
         val safeKey = when (key) {
-            "backgroundOpacity", "logoOpacity", "cardOpacity" -> key
+            "backgroundOpacity", "logoOpacity", "cardOpacity", "bannerOpacity" -> key
             else -> return
         }
         val safeValue = value.coerceIn(0, 100)
@@ -37,7 +40,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             "backgroundOpacity" -> backgroundOpacity = safeValue
             "logoOpacity" -> logoOpacity = safeValue
             "cardOpacity" -> cardOpacity = safeValue
+            "bannerOpacity" -> bannerOpacity = safeValue
         }
+    }
+
+    fun setSlideInterval(seconds: Int) {
+        val safe = if (seconds in listOf(0, 5, 8, 12)) seconds else 8
+        prefs.edit().putInt("slideIntervalSeconds", safe).apply()
+        slideIntervalSeconds = safe
+    }
+
+    fun setAutoPlayStreams(enabled: Boolean) {
+        prefs.edit().putBoolean("autoPlayStreams", enabled).apply()
+        autoPlayStreams = enabled
     }
 
     init {
@@ -84,6 +99,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         backgroundOpacity = prefs.getInt("backgroundOpacity", 100)
         logoOpacity = prefs.getInt("logoOpacity", 100)
         cardOpacity = prefs.getInt("cardOpacity", 100)
+        bannerOpacity = prefs.getInt("bannerOpacity", 100)
+        slideIntervalSeconds = prefs.getInt("slideIntervalSeconds", 8)
+        autoPlayStreams = prefs.getBoolean("autoPlayStreams", true)
     }
 
     fun clearFavorites() {
