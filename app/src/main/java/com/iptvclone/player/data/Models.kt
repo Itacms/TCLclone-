@@ -20,3 +20,12 @@ data class Playlist(
     val updatedAt: Long,
     val enabled: Boolean = true,
 )
+
+
+data class EpgProgram(
+    val channelId: String,
+    val title: String,
+    val description: String,
+    val startMillis: Long,
+    val endMillis: Long,
+)
