@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
@@ -63,6 +64,7 @@ import com.iptvclone.player.data.Channel
 enum class Tab(val label: String, val icon: ImageVector) {
     HOME("Início", Icons.Filled.Home),
     CHANNELS("TV ao vivo", Icons.Filled.PlayArrow),
+    GUIDE("Guia EPG", Icons.Filled.DateRange),
     MOVIES("Filmes e séries", Icons.Filled.Star),
     FAVORITES("Favoritos", Icons.Filled.Favorite),
     PLAYLISTS("Listas IPTV", Icons.Filled.List),
@@ -86,6 +88,7 @@ fun App(vm: AppViewModel) {
     val content: @Composable () -> Unit = {
         when (tab) {
             Tab.HOME -> HomeScreen(vm, onGoChannels = { tab = Tab.CHANNELS }, onGoPlaylists = { tab = Tab.PLAYLISTS }, onPlay = { playing = it })
+            Tab.GUIDE -> GuideScreen(vm.channels.filterNot { movieRegex.containsMatchIn(it.group) }, vm.epgPrograms) { playing = it }
             Tab.CHANNELS -> ChannelsScreen(
                 "TV ao vivo", vm.channels.filterNot { movieRegex.containsMatchIn(it.group) }, vm.favorites,
                 "Nenhum canal encontrado. Adicione sua lista na aba Listas IPTV.",
