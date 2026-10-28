@@ -50,7 +50,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         slideIntervalSeconds = safe
     }
 
-    fun setAutoPlayStreams(enabled: Boolean) {
+    fun updateAutoPlayStreams(enabled: Boolean) {
         prefs.edit().putBoolean("autoPlayStreams", enabled).apply()
         autoPlayStreams = enabled
     }
