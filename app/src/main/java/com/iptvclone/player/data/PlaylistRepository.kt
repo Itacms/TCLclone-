@@ -236,6 +236,71 @@ class PlaylistRepository(private val context: Context) {
         }
     }
 
+    /** Carrega a programação XMLTV declarada nos cabeçalhos #EXTM3U (url-tvg/x-tvg-url). */
+    suspend fun loadEpg(): List<EpgProgram> = withContext(Dispatchers.IO) {
+        val urls = readIndex().filter { it.enabled }.mapNotNull { pl ->
+            val file = fileOf(pl.id)
+            if (!file.exists()) null else {
+                val header = file.useLines { lines -> lines.firstOrNull().orEmpty() }
+                Regex("""(?:url-tvg|x-tvg-url|tvg-url)=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
+                    .find(header)?.groupValues?.getOrNull(1)
+            }
+        }.distinct().filter { it.startsWith("http://") || it.startsWith("https://") }
+        val result = mutableListOf<EpgProgram>()
+        val dateFormats = listOf(
+            java.text.SimpleDateFormat("yyyyMMddHHmmss Z", java.util.Locale.US),
+            java.text.SimpleDateFormat("yyyyMMddHHmmss", java.util.Locale.US)
+        )
+        for (url in urls.take(3)) {
+            try {
+                val request = Request.Builder().url(url).header("User-Agent", "IPTV Clone/1.5").build()
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@use
+                    val input = response.body?.byteStream() ?: return@use
+                    val parser = android.util.Xml.newPullParser()
+                    parser.setInput(input, "UTF-8")
+                    var event = parser.eventType
+                    var channelId = ""
+                    var start = ""
+                    var stop = ""
+                    var title = ""
+                    var description = ""
+                    while (event != org.xmlpull.v1.XmlPullParser.END_DOCUMENT) {
+                        when (event) {
+                            org.xmlpull.v1.XmlPullParser.START_TAG -> when (parser.name.lowercase()) {
+                                "programme" -> {
+                                    channelId = parser.getAttributeValue(null, "channel").orEmpty()
+                                    start = parser.getAttributeValue(null, "start").orEmpty()
+                                    stop = parser.getAttributeValue(null, "stop").orEmpty()
+                                    title = ""; description = ""
+                                }
+                                "title" -> title = parser.nextText().trim()
+                                "desc" -> description = parser.nextText().trim()
+                            }
+                            org.xmlpull.v1.XmlPullParser.END_TAG -> if (parser.name.equals("programme", true)) {
+                                fun parseTime(value: String): Long {
+                                    for (format in dateFormats) try {
+                                        format.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                                        return format.parse(value.trim())?.time ?: 0L
+                                    } catch (_: Exception) { }
+                                    return 0L
+                                }
+                                val startMs = parseTime(start)
+                                val endMs = parseTime(stop)
+                                if (channelId.isNotBlank() && title.isNotBlank() && startMs > 0 && endMs > startMs) {
+                                    result += EpgProgram(channelId, title, description, startMs, endMs)
+                                }
+                            }
+                        }
+                        event = parser.next()
+                    }
+                    input.close()
+                }
+            } catch (_: Exception) { /* Uma fonte EPG indisponível não deve derrubar o app. */ }
+        }
+        result.sortedBy { it.startMillis }
+    }
+
     private fun queryDisplayName(uri: Uri): String? = try {
         context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
             if (c.moveToFirst()) c.getString(0)?.substringBeforeLast('.') else null
