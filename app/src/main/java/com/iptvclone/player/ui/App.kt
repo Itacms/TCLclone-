@@ -34,7 +34,9 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.shape.RoundedCornerShape
 import coil.compose.AsyncImage
 import com.iptvclone.player.AppViewModel
@@ -76,7 +79,7 @@ fun App(vm: AppViewModel) {
 
     val current = playing
     if (current != null) {
-        PlayerScreen(current) { playing = null }
+        PlayerScreen(current, autoPlay = vm.autoPlayStreams) { playing = null }
         return
     }
 
@@ -158,6 +161,16 @@ private fun HomeScreen(
     val favorites = channels.filter { it.url in vm.favorites }
     val live = channels.filterNot { movieRegex.containsMatchIn(it.group) }
     val films = channels.filter { movieRegex.containsMatchIn(it.group) }
+    var slideIndex by rememberSaveable { mutableStateOf(0) }
+    LaunchedEffect(vm.slideIntervalSeconds, live.size) {
+        if (vm.slideIntervalSeconds > 0 && live.size > 1) {
+            while (true) {
+                delay(vm.slideIntervalSeconds * 1000L)
+                slideIndex = (slideIndex + 1) % live.size
+            }
+        }
+    }
+    val featured = live.getOrNull(if (live.isEmpty()) 0 else slideIndex % live.size)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(Color(0xFF080B12)),
@@ -168,7 +181,7 @@ private fun HomeScreen(
                 AsyncImage(
                     model = heroImage,
                     contentDescription = "Destaque visual",
-                    modifier = Modifier.fillMaxSize().graphicsLayer(alpha = vm.backgroundOpacity / 100f),
+                    modifier = Modifier.fillMaxSize().graphicsLayer(alpha = vm.bannerOpacity / 100f),
                     contentScale = ContentScale.Crop,
                 )
                 Box(
@@ -188,14 +201,13 @@ private fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text("DESTAQUE", color = Color(0xFF63DED5), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-                    Text("Entre no seu mundo", color = Color.White, fontSize = 29.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 33.sp)
+                    Text(featured?.name ?: "Entre no seu mundo", color = Color.White, fontSize = 29.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 33.sp)
                     Text(
-                        if (channels.isEmpty()) "Adicione uma lista IPTV para preencher sua tela com seus canais."
-                        else "Seus canais, favoritos e conteúdos em uma experiência feita para a TV.",
+                        if (featured != null) (featured.group.ifBlank { "TV ao vivo" } + " • Toque em assistir para reproduzir") else if (channels.isEmpty()) "Adicione uma lista IPTV para preencher sua tela com seus canais." else "Seus canais, favoritos e conteúdos em uma experiência feita para a TV.",
                         color = Color(0xFFE1E6EE), fontSize = 13.sp, maxLines = 3, overflow = TextOverflow.Ellipsis,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Button(onClick = { if (live.isNotEmpty()) onPlay(live.first()) else onGoChannels() }) {
+                        Button(onClick = { if (featured != null) onPlay(featured) else onGoChannels() }) {
                             Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(5.dp))
                             Text("Assistir")
@@ -301,12 +313,33 @@ private fun SettingsScreen(vm: AppViewModel) {
         item { OutlinedButton(onClick = { restoreBackup.launch(arrayOf("application/json", "text/*", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth()) { Text("Restaurar backup") } }
         item { Text("Atenção: restaurar substitui as listas e os favoritos atuais pelos dados do arquivo selecionado.", color = Color(0xFFFFC978), style = MaterialTheme.typography.bodySmall) }
         item { Text("Transparência", style = MaterialTheme.typography.titleMedium, color = Color.White) }
+        item { OpacitySetting("Banner / imagem de destaque", vm.bannerOpacity) { vm.setOpacity("bannerOpacity", it) } }
         item { OpacitySetting("Fundo da tela inicial", vm.backgroundOpacity) { vm.setOpacity("backgroundOpacity", it) } }
         item { OpacitySetting("Logotipos", vm.logoOpacity) { vm.setOpacity("logoOpacity", it) } }
         item { OpacitySetting("Cartões de canais", vm.cardOpacity) { vm.setOpacity("cardOpacity", it) } }
+        item { Text("Troca automática dos slides", style = MaterialTheme.typography.bodyMedium, color = Color.White) }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                listOf(0, 5, 8, 12).forEach { seconds ->
+                    val selected = vm.slideIntervalSeconds == seconds
+                    OutlinedButton(onClick = { vm.setSlideInterval(seconds) }) {
+                        Text(if (seconds == 0) "Desligado" else "${seconds}s", color = if (selected) Color(0xFF63DED5) else Color.White)
+                    }
+                }
+            }
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Reprodução automática", color = Color.White)
+                    Text("Iniciar o streaming assim que abrir um canal", color = Color(0xFF9AA6B8), fontSize = 12.sp)
+                }
+                Switch(checked = vm.autoPlayStreams, onCheckedChange = { vm.setAutoPlayStreams(it) })
+            }
+        }
         item { OutlinedButton(onClick = { vm.clearFavorites() }) { Text("Limpar favoritos") } }
         item { Text("Este app é apenas um player. Use somente listas e conteúdos que você tem direito de acessar.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9AA6B8)) }
-        item { Text("Versão 1.2", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9AA6B8)) }
+        item { Text("Versão 1.4", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9AA6B8)) }
         item { vm.message?.let { Text(it, color = Color(0xFF63DED5), style = MaterialTheme.typography.bodySmall) } }
     }
 }
