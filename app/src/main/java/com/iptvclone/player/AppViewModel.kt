@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.iptvclone.player.data.EpgProgram
 import com.iptvclone.player.data.Channel
 import com.iptvclone.player.data.Playlist
 import com.iptvclone.player.data.PlaylistRepository
@@ -17,6 +18,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     var playlists by mutableStateOf<List<Playlist>>(emptyList()); private set
     var channels by mutableStateOf<List<Channel>>(emptyList()); private set
+    var epgPrograms by mutableStateOf<List<EpgProgram>>(emptyList()); private set
     var favorites by mutableStateOf<Set<String>>(emptySet()); private set
     var busy by mutableStateOf(false); private set
     var message by mutableStateOf<String?>(null)
@@ -67,6 +69,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 block()
                 playlists = repo.playlists()
                 channels = repo.allChannels()
+                epgPrograms = repo.loadEpg()
                 if (successMessage != null) message = successMessage
             } catch (e: Exception) {
                 message = e.message ?: "Erro inesperado."
