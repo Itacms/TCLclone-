@@ -1,5 +1,7 @@
 package com.iptvclone.player.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -30,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,6 +47,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -164,7 +168,7 @@ private fun HomeScreen(
                 AsyncImage(
                     model = heroImage,
                     contentDescription = "Destaque visual",
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().graphicsLayer(alpha = vm.backgroundOpacity / 100f),
                     contentScale = ContentScale.Crop,
                 )
                 Box(
@@ -259,14 +263,14 @@ private fun ChannelShelf(title: String, channels: List<Channel>, onPlay: (Channe
             items(channels.take(30)) { ch ->
                 Column(
                     Modifier.width(156.dp).tvClickable(RoundedCornerShape(12.dp)) { onPlay(ch) }
-                        .background(Color(0xFF151D2A), RoundedCornerShape(12.dp)).padding(10.dp),
+                        .background(Color(0xFF151D2A).copy(alpha = vm.cardOpacity / 100f), RoundedCornerShape(12.dp)).padding(10.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Box(Modifier.fillMaxWidth().height(82.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF202B3B)), contentAlignment = Alignment.Center) {
                         AsyncImage(
                             model = ch.logo,
                             contentDescription = ch.name,
-                            modifier = Modifier.fillMaxSize().padding(8.dp),
+                            modifier = Modifier.fillMaxSize().padding(8.dp).graphicsLayer(alpha = vm.logoOpacity / 100f),
                             contentScale = ContentScale.Fit,
                         )
                         if (ch.logo.isNullOrBlank()) {
@@ -283,14 +287,37 @@ private fun ChannelShelf(title: String, channels: List<Channel>, onPlay: (Channe
 
 @Composable
 private fun SettingsScreen(vm: AppViewModel) {
-    Column(Modifier.fillMaxSize().background(Color(0xFF080B12)).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Configurações", style = MaterialTheme.typography.headlineSmall, color = Color.White)
-        OutlinedButton(onClick = { vm.clearFavorites() }) { Text("Limpar favoritos") }
-        Text(
-            "Este app é apenas um player. Use somente listas e conteúdos que você tem direito de acessar.",
-            style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFF9AA6B8),
-        )
-        Text("Versão 1.1", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9AA6B8))
+    val createBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) vm.exportBackup(uri)
+    }
+    val restoreBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) vm.restoreBackup(uri)
+    }
+    LazyColumn(Modifier.fillMaxSize().background(Color(0xFF080B12)).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { Text("Configurações", style = MaterialTheme.typography.headlineSmall, color = Color.White) }
+        item { Text("Backup e restauração", style = MaterialTheme.typography.titleMedium, color = Color.White) }
+        item { Text("O backup inclui listas M3U armazenadas, favoritos e preferências visuais.", color = Color(0xFFB7C0CE), style = MaterialTheme.typography.bodyMedium) }
+        item { Button(onClick = { createBackup.launch("iptv-clone-backup.json") }, modifier = Modifier.fillMaxWidth()) { Text("Fazer backup") } }
+        item { OutlinedButton(onClick = { restoreBackup.launch(arrayOf("application/json", "text/*", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth()) { Text("Restaurar backup") } }
+        item { Text("Atenção: restaurar substitui as listas e os favoritos atuais pelos dados do arquivo selecionado.", color = Color(0xFFFFC978), style = MaterialTheme.typography.bodySmall) }
+        item { Text("Transparência", style = MaterialTheme.typography.titleMedium, color = Color.White) }
+        item { OpacitySetting("Fundo da tela inicial", vm.backgroundOpacity) { vm.setOpacity("backgroundOpacity", it) } }
+        item { OpacitySetting("Logotipos", vm.logoOpacity) { vm.setOpacity("logoOpacity", it) } }
+        item { OpacitySetting("Cartões de canais", vm.cardOpacity) { vm.setOpacity("cardOpacity", it) } }
+        item { OutlinedButton(onClick = { vm.clearFavorites() }) { Text("Limpar favoritos") } }
+        item { Text("Este app é apenas um player. Use somente listas e conteúdos que você tem direito de acessar.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9AA6B8)) }
+        item { Text("Versão 1.2", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9AA6B8)) }
+        item { vm.message?.let { Text(it, color = Color(0xFF63DED5), style = MaterialTheme.typography.bodySmall) } }
+    }
+}
+
+@Composable
+private fun OpacitySetting(label: String, value: Int, onValueChange: (Int) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            Text(label, color = Color.White, style = MaterialTheme.typography.bodyMedium)
+            Text("$value%", color = Color(0xFF63DED5), style = MaterialTheme.typography.labelLarge)
+        }
+        Slider(value = value.toFloat(), onValueChange = { onValueChange((it / 5f).toInt() * 5) }, valueRange = 0f..100f, steps = 19)
     }
 }

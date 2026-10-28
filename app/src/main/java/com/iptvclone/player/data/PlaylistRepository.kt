@@ -147,6 +147,81 @@ class PlaylistRepository(private val context: Context) {
         prefs.edit().putStringSet("favs", HashSet(set)).apply()
     }
 
+    // ---------- backup / restore ----------
+
+    suspend fun exportBackup(uri: Uri) = withContext(Dispatchers.IO) {
+        val entries = JSONArray()
+        readIndex().forEach { pl ->
+            val sourceFile = fileOf(pl.id)
+            entries.put(JSONObject().apply {
+                put("id", pl.id); put("name", pl.name); put("type", pl.type.name)
+                put("location", pl.location); put("count", pl.channelCount)
+                put("updatedAt", pl.updatedAt); put("enabled", pl.enabled)
+                put("m3u", if (sourceFile.exists()) sourceFile.readText() else "")
+            })
+        }
+        val root = JSONObject().apply {
+            put("format", "iptv-clone-backup"); put("version", 1)
+            put("createdAt", System.currentTimeMillis()); put("playlists", entries)
+            put("favorites", JSONArray(favorites().toList()))
+            put("settings", JSONObject().apply {
+                put("backgroundOpacity", prefs.getInt("backgroundOpacity", 100))
+                put("logoOpacity", prefs.getInt("logoOpacity", 100))
+                put("cardOpacity", prefs.getInt("cardOpacity", 100))
+            })
+        }
+        val output = context.contentResolver.openOutputStream(uri, "wt")
+            ?: error("Não foi possível gravar o arquivo de backup.")
+        output.bufferedWriter(Charsets.UTF_8).use { it.write(root.toString(2)) }
+    }
+
+    suspend fun restoreBackup(uri: Uri) = withContext(Dispatchers.IO) {
+        val input = context.contentResolver.openInputStream(uri)
+            ?: error("Não foi possível abrir o arquivo de backup.")
+        val root = input.bufferedReader(Charsets.UTF_8).use { JSONObject(it.readText()) }
+        require(root.optString("format") == "iptv-clone-backup") {
+            "Este arquivo não é um backup válido do IPTV Clone."
+        }
+        require(root.optInt("version", 0) == 1) {
+            "A versão deste backup não é compatível com este aplicativo."
+        }
+        val sourceEntries = root.optJSONArray("playlists") ?: JSONArray()
+        val restored = mutableListOf<Playlist>()
+        val staged = mutableListOf<Pair<File, String>>()
+        for (i in 0 until sourceEntries.length()) {
+            val item = sourceEntries.optJSONObject(i) ?: continue
+            val content = item.optString("m3u", "")
+            require(content.isNotBlank() && content.contains("#EXTM3U", ignoreCase = true)) {
+                "O backup contém uma lista inválida. Os dados atuais foram mantidos."
+            }
+            val type = try { SourceType.valueOf(item.optString("type", "URL")) }
+                catch (_: Exception) { SourceType.URL }
+            val id = UUID.randomUUID().toString()
+            staged.add(fileOf(id) to content)
+            restored.add(Playlist(
+                id = id, name = item.optString("name", "Lista IPTV"), type = type,
+                location = item.optString("location", ""),
+                channelCount = M3uParser.parse(content, id).size,
+                updatedAt = item.optLong("updatedAt", System.currentTimeMillis()),
+                enabled = item.optBoolean("enabled", true),
+            ))
+        }
+        val oldFiles = dir.listFiles { file -> file.extension == "m3u" }?.toList().orEmpty()
+        staged.forEach { (target, content) -> target.writeText(content) }
+        writeIndex(restored)
+        oldFiles.forEach { it.delete() }
+        val favArray = root.optJSONArray("favorites") ?: JSONArray()
+        val favs = (0 until favArray.length()).mapNotNull { favArray.optString(it).takeIf(String::isNotBlank) }.toSet()
+        setFavorites(favs)
+        root.optJSONObject("settings")?.let { settings ->
+            prefs.edit()
+                .putInt("backgroundOpacity", settings.optInt("backgroundOpacity", 100).coerceIn(0, 100))
+                .putInt("logoOpacity", settings.optInt("logoOpacity", 100).coerceIn(0, 100))
+                .putInt("cardOpacity", settings.optInt("cardOpacity", 100).coerceIn(0, 100))
+                .apply()
+        }
+    }
+
     // ---------- util ----------
 
     private fun download(url: String, target: File) {
