@@ -30,7 +30,7 @@ import com.iptvclone.player.data.Channel
 
 @OptIn(UnstableApi::class)
 @Composable
-fun PlayerScreen(channel: Channel, onClose: () -> Unit) {
+fun PlayerScreen(channel: Channel, autoPlay: Boolean = true, onClose: () -> Unit) {
     val context = LocalContext.current
     var error by remember(channel.url) { mutableStateOf<String?>(null) }
 
@@ -44,7 +44,7 @@ fun PlayerScreen(channel: Channel, onClose: () -> Unit) {
             .apply {
                 setMediaItem(MediaItem.fromUri(channel.url))
                 prepare()
-                playWhenReady = true
+                playWhenReady = autoPlay
             }
     }
 
