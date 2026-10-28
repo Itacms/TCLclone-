@@ -334,7 +334,7 @@ private fun SettingsScreen(vm: AppViewModel) {
                     Text("Reprodução automática", color = Color.White)
                     Text("Iniciar o streaming assim que abrir um canal", color = Color(0xFF9AA6B8), fontSize = 12.sp)
                 }
-                Switch(checked = vm.autoPlayStreams, onCheckedChange = { vm.setAutoPlayStreams(it) })
+                Switch(checked = vm.autoPlayStreams, onCheckedChange = { vm.updateAutoPlayStreams(it) })
             }
         }
         item { OutlinedButton(onClick = { vm.clearFavorites() }) { Text("Limpar favoritos") } }
