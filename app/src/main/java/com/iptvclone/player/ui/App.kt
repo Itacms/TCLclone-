@@ -231,13 +231,13 @@ private fun HomeScreen(
         }
 
         if (favorites.isNotEmpty()) {
-            item { ChannelShelf("Continue com seus favoritos", favorites, onPlay) }
+            item { ChannelShelf("Continue com seus favoritos", favorites, onPlay, vm) }
         }
         if (live.isNotEmpty()) {
-            item { ChannelShelf("TV ao vivo", live, onPlay) }
+            item { ChannelShelf("TV ao vivo", live, onPlay, vm) }
         }
         if (films.isNotEmpty()) {
-            item { ChannelShelf("Filmes e séries", films, onPlay) }
+            item { ChannelShelf("Filmes e séries", films, onPlay, vm) }
         }
         if (channels.isEmpty()) {
             item {
@@ -253,7 +253,7 @@ private fun HomeScreen(
 }
 
 @Composable
-private fun ChannelShelf(title: String, channels: List<Channel>, onPlay: (Channel) -> Unit) {
+private fun ChannelShelf(title: String, channels: List<Channel>, onPlay: (Channel) -> Unit, vm: AppViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 24.dp))
         LazyRow(
