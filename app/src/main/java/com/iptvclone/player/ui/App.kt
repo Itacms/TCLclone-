@@ -67,7 +67,7 @@ enum class Tab(val label: String, val icon: ImageVector) {
 }
 
 private val movieRegex = Regex("film|movie|vod|cine|s[ée]rie|series", RegexOption.IGNORE_CASE)
-private const val heroImage = "https://aws-obg-image-lb-5.tcl.com/content/dam/brandsite/region/brazil/blog/naruto.jpg?t=1758250221939&w=1200"
+private const val heroImage = "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1600&q=80"
 
 @Composable
 fun App(vm: AppViewModel) {
@@ -112,7 +112,7 @@ fun App(vm: AppViewModel) {
                         .padding(horizontal = 12.dp, vertical = 22.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("TCL  •  PLAY", color = Color(0xFF53D8D1), fontWeight = FontWeight.Bold, fontSize = 17.sp, modifier = Modifier.padding(start = 12.dp, bottom = 22.dp))
+                    Text("IPTV  •  PLAY", color = Color(0xFF53D8D1), fontWeight = FontWeight.Bold, fontSize = 17.sp, modifier = Modifier.padding(start = 12.dp, bottom = 22.dp))
                     Tab.values().forEach { t ->
                         val selected = t == tab
                         val bg = if (selected) Color(0xFF203A49) else Color.Transparent
@@ -206,7 +206,7 @@ private fun HomeScreen(
                     }
                 }
                 Text(
-                    "IPTV  •  SUA PROGRAMAÇÃO",
+                    "SUAS LISTAS  •  SEU CONTEÚDO",
                     color = Color(0xFFD6DCE7),
                     fontSize = 10.sp,
                     letterSpacing = 1.4.sp,
@@ -262,11 +262,11 @@ private fun ChannelShelf(title: String, channels: List<Channel>, onPlay: (Channe
         ) {
             items(channels.take(30)) { ch ->
                 Column(
-                    Modifier.width(156.dp).tvClickable(RoundedCornerShape(12.dp)) { onPlay(ch) }
+                    Modifier.width(216.dp).tvClickable(RoundedCornerShape(12.dp)) { onPlay(ch) }
                         .background(Color(0xFF151D2A).copy(alpha = vm.cardOpacity / 100f), RoundedCornerShape(12.dp)).padding(10.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Box(Modifier.fillMaxWidth().height(82.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF202B3B)), contentAlignment = Alignment.Center) {
+                    Box(Modifier.fillMaxWidth().height(122.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF202B3B)), contentAlignment = Alignment.Center) {
                         AsyncImage(
                             model = ch.logo,
                             contentDescription = ch.name,
