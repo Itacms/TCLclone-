@@ -11,8 +11,8 @@ android {
         applicationId = "com.iptvclone.player"
         minSdk = 23
         targetSdk = 34
-        versionCode = 4
-        versionName = "1.4"
+        versionCode = 5
+        versionName = "1.5"
     }
     buildTypes {
         release { isMinifyEnabled = false }
