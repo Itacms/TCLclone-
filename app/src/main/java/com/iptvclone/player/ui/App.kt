@@ -124,16 +124,16 @@ fun App(vm: AppViewModel) {
                         .padding(horizontal = 12.dp, vertical = 22.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("IPTV  •  PLAY", color = Color(0xFF53D8D1), fontWeight = FontWeight.Bold, fontSize = 17.sp, modifier = Modifier.padding(start = 12.dp, bottom = 22.dp))
+                    Text("IPTV  •  PLAY", color = Color(0xFFFF343D), fontWeight = FontWeight.Bold, fontSize = 17.sp, modifier = Modifier.padding(start = 12.dp, bottom = 22.dp))
                     Tab.values().forEach { t ->
                         val selected = t == tab
-                        val bg = if (selected) Color(0xFF203A49) else Color.Transparent
+                        val bg = if (selected) Color(0xFF292A2D) else Color.Transparent
                         Row(
                             Modifier.fillMaxWidth().tvClickable(RoundedCornerShape(14.dp)) { tab = t }
                                 .background(bg, RoundedCornerShape(14.dp)).padding(horizontal = 12.dp, vertical = 13.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(t.icon, contentDescription = null, tint = if (selected) Color(0xFF67E4DB) else Color(0xFFB7C0CE), modifier = Modifier.size(21.dp))
+                            Icon(t.icon, contentDescription = null, tint = if (selected) Color(0xFFFF5960) else Color(0xFFB7C0CE), modifier = Modifier.size(21.dp))
                             Spacer(Modifier.width(12.dp))
                             Text(t.label, color = if (selected) Color.White else Color(0xFFB7C0CE), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
@@ -186,7 +186,7 @@ private fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(22.dp),
     ) {
         item {
-            Box(Modifier.fillMaxWidth().height(310.dp).background(Color(0xFF121A29))) {
+            Box(Modifier.fillMaxWidth().height(350.dp).background(Color(0xFF121A29))) {
                 AsyncImage(
                     model = heroImage,
                     contentDescription = "Destaque visual",
@@ -209,7 +209,7 @@ private fun HomeScreen(
                     Modifier.align(Alignment.CenterStart).fillMaxWidth(0.72f).padding(start = 28.dp, end = 12.dp, top = 14.dp, bottom = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Text("DESTAQUE", color = Color(0xFF63DED5), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text("DESTAQUE", color = Color(0xFFFF454D), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Text(featured?.name ?: "Entre no seu mundo", color = Color.White, fontSize = 29.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 33.sp)
                     Text(
                         if (featured != null) (featured.group.ifBlank { "TV ao vivo" } + " • Toque em assistir para reproduzir") else if (channels.isEmpty()) "Adicione uma lista IPTV para preencher sua tela com seus canais." else "Seus canais, favoritos e conteúdos em uma experiência feita para a TV.",
@@ -246,7 +246,7 @@ private fun HomeScreen(
                     Text("Sua programação", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold)
                     Text("${vm.playlists.size} listas  •  ${channels.size} canais  •  ${vm.favorites.size} favoritos", color = Color(0xFF9AA6B8), fontSize = 12.sp)
                 }
-                Text("GERENCIAR LISTAS  ›", color = Color(0xFF65DCD4), fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                Text("GERENCIAR LISTAS  ›", color = Color(0xFFFF454D), fontSize = 10.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.tvClickable { onGoPlaylists() }.padding(8.dp))
             }
         }
@@ -283,11 +283,11 @@ private fun ChannelShelf(title: String, channels: List<Channel>, onPlay: (Channe
         ) {
             items(channels.take(30)) { ch ->
                 Column(
-                    Modifier.width(216.dp).tvClickable(RoundedCornerShape(12.dp)) { onPlay(ch) }
+                    Modifier.width(260.dp).tvClickable(RoundedCornerShape(12.dp)) { onPlay(ch) }
                         .background(Color(0xFF151D2A).copy(alpha = vm.cardOpacity / 100f), RoundedCornerShape(12.dp)).padding(10.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Box(Modifier.fillMaxWidth().height(122.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF202B3B)), contentAlignment = Alignment.Center) {
+                    Box(Modifier.fillMaxWidth().height(146.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF202B3B)), contentAlignment = Alignment.Center) {
                         AsyncImage(
                             model = ch.logo,
                             contentDescription = ch.name,
