@@ -342,7 +342,7 @@ private fun SettingsScreen(vm: AppViewModel) {
         }
         item { OutlinedButton(onClick = { vm.clearFavorites() }) { Text("Limpar favoritos") } }
         item { Text("Este app é apenas um player. Use somente listas e conteúdos que você tem direito de acessar.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9AA6B8)) }
-        item { Text("Versão 1.4", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9AA6B8)) }
+        item { Text("Versão 1.6", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9AA6B8)) }
         item { vm.message?.let { Text(it, color = Color(0xFF63DED5), style = MaterialTheme.typography.bodySmall) } }
     }
 }
