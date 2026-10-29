@@ -81,7 +81,13 @@ fun App(vm: AppViewModel) {
 
     val current = playing
     if (current != null) {
-        PlayerScreen(current, autoPlay = vm.autoPlayStreams) { playing = null }
+        PlayerScreen(
+            channel = current,
+            autoPlay = vm.autoPlayStreams,
+            isFavorite = current.url in vm.favorites,
+            onToggleFavorite = { vm.toggleFavorite(current) },
+            onBackToGuide = { playing = null; tab = Tab.GUIDE },
+        )
         return
     }
 
