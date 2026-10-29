@@ -56,7 +56,7 @@ fun PlayerScreen(
                 setMediaItem(MediaItem.fromUri(channel.url))
                 repeatMode = Player.REPEAT_MODE_OFF
                 prepare()
-                playWhenReady = true
+                playWhenReady = autoPlay
             }
     }
 
