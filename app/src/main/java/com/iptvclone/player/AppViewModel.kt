@@ -62,14 +62,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         work { }
     }
 
-    private fun work(successMessage: String? = null, block: suspend () -> Unit) {
+    private fun work(successMessage: String? = null, reloadEpg: Boolean = true, block: suspend () -> Unit) {
         viewModelScope.launch {
             busy = true
             try {
                 block()
                 playlists = repo.playlists()
                 channels = repo.allChannels()
-                epgPrograms = repo.loadEpg()
+                if (reloadEpg) epgPrograms = repo.loadEpg()
                 if (successMessage != null) message = successMessage
             } catch (e: Exception) {
                 message = e.message ?: "Erro inesperado."
@@ -94,7 +94,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         repo.setFavorites(favorites)
     }
 
-    fun exportBackup(uri: Uri) = work("Backup exportado com sucesso.") { repo.exportBackup(uri) }
+    fun exportBackup(uri: Uri) = work("Backup exportado com sucesso.", reloadEpg = false) { repo.exportBackup(uri) }
 
     fun restoreBackup(uri: Uri) = work("Backup restaurado com sucesso.") {
         repo.restoreBackup(uri)
