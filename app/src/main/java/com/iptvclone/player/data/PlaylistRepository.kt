@@ -168,6 +168,9 @@ class PlaylistRepository(private val context: Context) {
                 put("backgroundOpacity", prefs.getInt("backgroundOpacity", 100))
                 put("logoOpacity", prefs.getInt("logoOpacity", 100))
                 put("cardOpacity", prefs.getInt("cardOpacity", 100))
+                put("bannerOpacity", prefs.getInt("bannerOpacity", 100))
+                put("slideIntervalSeconds", prefs.getInt("slideIntervalSeconds", 8))
+                put("autoPlayStreams", prefs.getBoolean("autoPlayStreams", true))
             })
         }
         val output = context.contentResolver.openOutputStream(uri, "wt")
@@ -218,6 +221,9 @@ class PlaylistRepository(private val context: Context) {
                 .putInt("backgroundOpacity", settings.optInt("backgroundOpacity", 100).coerceIn(0, 100))
                 .putInt("logoOpacity", settings.optInt("logoOpacity", 100).coerceIn(0, 100))
                 .putInt("cardOpacity", settings.optInt("cardOpacity", 100).coerceIn(0, 100))
+                .putInt("bannerOpacity", settings.optInt("bannerOpacity", 100).coerceIn(0, 100))
+                .putInt("slideIntervalSeconds", settings.optInt("slideIntervalSeconds", 8).let { if (it in listOf(0, 5, 8, 12)) it else 8 })
+                .putBoolean("autoPlayStreams", settings.optBoolean("autoPlayStreams", true))
                 .apply()
         }
     }
